@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'category',  # oluşturulan category eklendir.
     'accounts',
     'store',
+    'carts',
 ]
 
 MIDDLEWARE = [
