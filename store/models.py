@@ -49,5 +49,6 @@ class Variation(models.Model):
     # yukarda oluşturalan manager tanıtıldı
     objects = VariationManager()
 
+
     def __str__(self):
         return self.product.product_name + ' --- ' + self.variation_category + ' : ' + self.variation_value

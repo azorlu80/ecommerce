@@ -40,27 +40,24 @@ def add_cart(request, product_id):
     cart.save()
 
     is_cart_item_exists = CartItem.objects.filter(product=product, cart=cart).exists()
-    #ürün daha önce farklı bir vasyasyonla bile olsa chart ta var ise;
+    # ürün daha önce farklı bir vasyasyonla bile olsa chart ta var ise;
     if is_cart_item_exists:
         cart_item = CartItem.objects.filter(product=product, cart=cart)
-            #existing_variations --- database --done
-            #current variation --- product_variations
-            #item_id ---- database
+        # existing_variations --- database --done
+        # current variation --- product_variations
+        # item_id ---- database
         existing_variation_list = []
         id = []
         for item in cart_item:
             existing_variation = item.variations.all()
             existing_variation_list.append(list(existing_variation))
-            id.append(item.id) # cartitem lerin id lerini listede topluyoruz
-            print('id :', id )
+            id.append(item.id)  # cartitem lerin id lerini listede topluyoruz
         # print(existing_variation_list)
-        #post request ile gönderilen yeni vasyasyon deperinde ürün zaten chart ta var ise
+        # post request ile gönderilen yeni vasyasyon deperinde ürün zaten chart ta var ise
         if product_variation in existing_variation_list:
-            #increase cartitem quantity
+            # increase cartitem quantity
             index = existing_variation_list.index(product_variation)
-            print('index :', index)
             item_id = id[index]
-            print('item_id :', item_id)
             item = CartItem.objects.get(product=product, id=item_id)
             item.quantity += 1
             item.save()
@@ -76,7 +73,7 @@ def add_cart(request, product_id):
                 item.variations.clear()
                 item.variations.add(*product_variation)
             item.save()
-    #ürün bir bir şekilde chart ta yok ise;
+    # ürün bir bir şekilde chart ta yok ise;
     else:
         cart_item = CartItem.objects.create(
             product=product,
@@ -91,22 +88,27 @@ def add_cart(request, product_id):
     return redirect("cart")
 
 
-def decrease_cart_item(request, product_id):
+def decrease_cart_item(request, product_id, cart_item_id):
     cart = Cart.objects.get(cart_id=session(request))
     product = get_object_or_404(Product, id=product_id)
-    cart_item = CartItem.objects.get(product=product, cart=cart)
-    if cart_item.quantity > 1:
-        cart_item.quantity -= 1
-        cart_item.save()
-    else:
-        cart_item.delete()
+    try:
+        cart_item = CartItem.objects.get(product=product, cart=cart, id=cart_item_id)
+        if cart_item.quantity > 1:
+            cart_item.quantity -= 1
+            cart_item.save()
+        else:
+            cart_item.delete()
+    except:
+        pass
     return redirect('cart')
 
+# aynı üründen birden fazla varyasyon listede olduğu için hangi ürün ve hangi varyasyonun dilineceğini bilgisini almamız
+# gerekiyor.
 
-def remove_cart_item(request, product_id):
+def remove_cart_item(request, product_id, cart_item_id):
     cart = Cart.objects.get(cart_id=session(request))
     product = get_object_or_404(Product, id=product_id)
-    cart_item = CartItem.objects.filter(product=product, cart=cart)
+    cart_item = CartItem.objects.filter(product=product, cart=cart, id=cart_item_id)
     cart_item.delete()
     return redirect('cart')
 
