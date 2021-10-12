@@ -131,3 +131,11 @@ STATICFILES_DIRS = [  # bu klasörde belirlediğimiz yüklemiş oldugumuz static
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# django messages servisi için eklendi
+from django.contrib.messages import constants as messages
+
+MESSAGE_TAGS = {
+    messages.ERROR: 'danger',
+
+}
