@@ -12,6 +12,9 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
 
+from carts.views import session
+from carts.models import Cart, CartItem
+from django.shortcuts import get_object_or_404
 
 # Create your views here.
 
@@ -69,14 +72,57 @@ def login(request):
         password = request.POST['password']
 
         user = auth.authenticate(email=email, password=password)
-        print(user)
-
         if user is not None:
+            try:
+                cart_id = session(request)
+                cart = Cart.objects.get(cart_id=cart_id)
+                is_cart_item_exists = CartItem.objects.filter(cart_id=cart.id).exists()
+                if is_cart_item_exists:
+                    #cart ile cart_item leri buluyoruz ki bu durumda user daha sisteme giriş yapmadıgı durumlardaki
+                    cart_item = CartItem.objects.filter(cart=cart)
+                    #iki adet listemiz oluyor 1- product_list digeri existing_variation_list
+                    product_variation = []
+                    for item in cart_item:
+                        variation = item.variations.all()
+                        product_variation.append(list(variation))
+
+                        #get the cart items from the user to access his product variations
+                    #user forengkey ile cart_item leri buluyoruz ki bu durumda sisteme login olduktan sonraki
+                    cart_item = CartItem.objects.filter(user=user)
+                    existing_variation_list = []
+                    id = []
+                    for item in cart_item:
+                        existing_variation = item.variations.all()
+                        existing_variation_list.append(list(existing_variation))
+                        id.append(item.id)  # cartitem lerin id lerini listede topluyoruz
+                    #iki kümenin karışaltırılması
+                    #zaten varsa sadece sayısını arttır.
+                    for pr in product_variation:
+                        if pr in existing_variation_list:
+                            index = existing_variation_list.index(pr)
+                            item_id = id[index]
+                            item = CartItem.objects.get(id=item_id)
+                            item.quantity += 1
+                            item.user = user
+                            item.save()
+                        else:
+                            cart_item = CartItem.objects.filter(cart=cart)
+                            for item in cart_item:
+                                item.user = user
+                                item.save()
+
+
+
+                    # cart item degerlerini gezip user a atama yap
+                    # for item in cart_item:
+                    #     item.user = user
+                    #     item.save()
+            except:
+                pass
             auth.login(request, user)
             messages.success(request, 'You are now logged in')
             return redirect('dashboard')
         else:
-
             messages.error(request, 'invalid login credentials')
             return redirect('login')
 
@@ -167,7 +213,7 @@ def resetpassword(request):
         confirm_password = request.POST['confirm_password']
 
         if password == confirm_password:
-            #validasyon doğru ise session uid degerini set etmiştik geri alıyoruz.
+            # validasyon doğru ise session uid degerini set etmiştik geri alıyoruz.
             uid = request.session.get('uid')
             user = Account.objects.get(pk=uid)
             user.set_password(password)
